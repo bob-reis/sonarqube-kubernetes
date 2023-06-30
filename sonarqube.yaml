@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      initContainers:
+      - name: init-sonarqube
+        image: busybox:1.31.1
+        command:
+        - sh
+        - -c
+        - >
+          chown -R 1000:1000 /opt/sonarqube/data &&
+          chown -R 1000:1000 /opt/sonarqube/extensions
+        volumeMounts:
+        - mountPath: /opt/sonarqube/data
+          name: sonar-data-storage
+        - mountPath: /opt/sonarqube/extensions
+          name: sonar-extensions-storage
+      containers:
+      - name: sonarqube
+        image: sonarqube:latest
+        env:
+        - name: SONARQUBE_JDBC_USERNAME
+          value: "s0n4rqub3-242"
+        - name: SONARQUBE_JDBC_PASSWORD
+          value: "8&%EWYK7Jid2"
+        - name: SONARQUBE_JDBC_URL
+          value: "jdbc:postgresql://postgresql:5432/sonarqube-utm-242"
+        - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
+          value: "true"
+        volumeMounts:
+        - mountPath: "/opt/sonarqube/data"
+          name: sonar-data-storage
+        - mountPath: "/opt/sonarqube/extensions"
+          name: sonar-extensions-storage
+      volumes:
+      - name: sonar-data-storage
+        persistentVolumeClaim:
+          claimName: sonar-data-pvc
+      - name: sonar-extensions-storage
+        persistentVolumeClaim:
+          claimName: sonar-extensions-pvc
